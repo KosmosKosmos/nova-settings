@@ -13,6 +13,8 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 
 class SettingsController extends Controller
 {
+    const ENCRYPTED_PLACEHOLDER = '**********';
+
     public function get(Request $request)
     {
         $fields = collect(NovaSettingsTool::getSettingsFields());
@@ -25,7 +27,7 @@ class SettingsController extends Controller
                     $key = substr_replace($key, '', 0, 10);
                     try {
                         $decrypted = Crypt::decrypt(setting($key));
-                        $value = substr($decrypted, 0, 1).'***'.substr($decrypted, -1, 1);
+                        $value = self::ENCRYPTED_PLACEHOLDER;
                     } catch (DecryptException $e) {
                         $value = setting($key);
                     }
@@ -56,7 +58,7 @@ class SettingsController extends Controller
                     try {
                         Crypt::decrypt($value);
                     } catch (DecryptException $e) {
-                        if (strpos($value, '***') == 1 && strlen($value) == 5) {
+                        if ($value == self::ENCRYPTED_PLACEHOLDER) {
                             $value = setting($key);
                         } else {
                             $value = Crypt::encrypt($value);
