@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Epigra\NovaSettings\NovaSettingsTool;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Log;
 use Laravel\Nova\Contracts\Resolvable;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
@@ -25,7 +24,8 @@ class SettingsController extends Controller
                 if (strpos($key, 'encrypted_') === 0) {
                     $key = substr_replace($key, '', 0, 10);
                     try {
-                        $value = Crypt::decrypt(setting($key));
+                        $decrypted = Crypt::decrypt(setting($key));
+                        $value = substr($decrypted, 0, 1).'***'.substr($decrypted, -1, 1);
                     } catch (DecryptException $e) {
                         $value = setting($key);
                     }
@@ -56,7 +56,11 @@ class SettingsController extends Controller
                     try {
                         Crypt::decrypt($value);
                     } catch (DecryptException $e) {
-                        $value = Crypt::encrypt($value);
+                        if (strpos($value, '***') == 1 && strlen($value) == 5) {
+                            $value = setting($key);
+                        } else {
+                            $value = Crypt::encrypt($value);
+                        }
                     }
                 }
                 setting([$key =>  $value]);
